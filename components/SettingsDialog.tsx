@@ -56,9 +56,20 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ settings, onSave
               />
             </div>
 
-            {/* Model Selection via Banana Cards */}
+            {/* Model Selection via Input & Banana Cards */}
             <div>
               <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-3 ml-2">Intelligence Core</label>
+              
+              {/* Manual Input Field */}
+              <input 
+                type="text" 
+                value={localSettings.selectedModel}
+                onChange={(e) => setLocalSettings(prev => ({ ...prev, selectedModel: e.target.value }))}
+                placeholder="Model ID (e.g. gemini-1.5-pro)"
+                className="w-full bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-white focus:border-blue-500/50 outline-none transition-all text-sm font-mono tracking-wider mb-4 placeholder:text-white/20"
+              />
+
+              {/* Quick Select Presets */}
               <div className="grid grid-cols-2 gap-3">
                 {modelMap.map((m) => (
                   <button
@@ -67,7 +78,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ settings, onSave
                     className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 ${
                       localSettings.selectedModel === m.id 
                         ? 'bg-white/10 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.15)]' 
-                        : 'bg-white/5 border-white/5 grayscale opacity-40'
+                        : 'bg-white/5 border-white/5 grayscale opacity-40 hover:opacity-60'
                     }`}
                   >
                     <span className="text-2xl mb-1">{m.label}</span>

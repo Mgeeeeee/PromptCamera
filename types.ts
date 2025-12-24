@@ -16,6 +16,6 @@ export interface AppState {
 }
 
 export enum ModelType {
-  FLASH = 'gemini-2.5-flash-image',
-  PRO = 'gemini-3-pro-image-preview-4k'
+  FLASH = 'gemini-2.5-flash-image-vip',
+  PRO = 'gemini-3-pro-image-preview-2k-async'
 }
