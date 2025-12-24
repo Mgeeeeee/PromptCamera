@@ -20,7 +20,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ settings, onSave
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 backdrop-blur-xl p-6 animate-in fade-in duration-300">
       <div className="w-full max-w-md bg-[#121212] rounded-[2.5rem] border border-white/10 p-8 shadow-2xl overflow-hidden relative">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-xl font-black uppercase tracking-[0.2em] text-white">Station Config</h2>
+          <h2 className="text-xl font-black uppercase tracking-[0.2em] text-white">Lab Config</h2>
           <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center active:scale-90 transition-all">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-white/50">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -46,7 +46,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ settings, onSave
           <div className="space-y-6">
             {/* API Key Input */}
             <div>
-              <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-3 ml-2">Access Secret</label>
+              <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-3 ml-2">Access Key</label>
               <input 
                 type="password" 
                 value={localSettings.apiKey}

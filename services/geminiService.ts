@@ -15,10 +15,11 @@ export const generateAIImage = async (
   // 2. Default to official SDK (Direct Google Gemini)
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const base64Data = base64Image.split(',')[1] || base64Image;
+  const selectedModel = apiSettings?.selectedModel || ModelType.FLASH;
 
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: ModelType.FLASH,
+      model: selectedModel,
       contents: [
         {
           role: 'user',
@@ -68,7 +69,6 @@ async function generateWithCustomProvider(
   
   const base64Data = base64Image.split(',')[1] || base64Image;
 
-  // Try Gemini-style Native REST endpoint first if it's a Gemini model
   if (isGeminiModel) {
     const url = `${baseUrl}/models/${settings.selectedModel}:generateContent?key=${settings.apiKey}`;
     
@@ -92,14 +92,12 @@ async function generateWithCustomProvider(
       const data = await response.json();
       
       if (!response.ok) {
-        // Fallback to OpenAI compatible if the endpoint is not found or method is not allowed
         if (response.status === 404 || response.status === 405) {
            return fetchViaOpenAICompatible(baseUrl, base64Image, prompt, settings);
         }
         throw new Error(data.error?.message || `Proxy error ${response.status}`);
       }
 
-      // 1. Try standard Gemini candidate structure
       if (data.candidates && data.candidates.length > 0) {
         for (const cand of data.candidates) {
           const parts = cand.content?.parts || [];
@@ -117,20 +115,15 @@ async function generateWithCustomProvider(
         }
       }
 
-      // 2. Handle cases where proxy uses OpenAI-style structure even on Gemini endpoint
       if (data.data && Array.isArray(data.data) && data.data.length > 0) {
         const item = data.data[0];
         if (item.b64_json) return `data:image/png;base64,${item.b64_json}`;
         if (item.url) return item.url;
       }
 
-      // 3. Last chance: Check root level for common fields
       if (data.url) return data.url;
       if (data.image) return data.image;
 
-      console.warn("Could not find image in Gemini response structure:", data);
-      
-      // If we found nothing but didn't throw yet, try OpenAI-style
       return fetchViaOpenAICompatible(baseUrl, base64Image, prompt, settings);
       
     } catch (e: any) {
@@ -150,7 +143,6 @@ async function fetchViaOpenAICompatible(
   prompt: string,
   settings: ApiSettings
 ): Promise<string> {
-  // Most proxies for image generation expose /images/generations
   const url = `${baseUrl}/images/generations`;
   try {
     const response = await fetch(url, {
@@ -162,7 +154,7 @@ async function fetchViaOpenAICompatible(
       body: JSON.stringify({
         model: settings.selectedModel,
         prompt: `Artistic transformation: ${prompt}`,
-        image: base64Image, // Used by some specialized image-to-image proxies
+        image: base64Image,
         n: 1,
         size: "1024x1024",
         response_format: "b64_json"
@@ -175,7 +167,6 @@ async function fetchViaOpenAICompatible(
       if (b64) return b64.startsWith('http') ? b64 : `data:image/png;base64,${b64}`;
     }
     
-    // If standard image endpoint fails, it might be a multi-modal chat model
     return fetchViaChatCompletions(baseUrl, base64Image, prompt, settings);
 
   } catch (err) {
@@ -215,7 +206,6 @@ async function fetchViaChatCompletions(
 
   const textContent = data.choices?.[0]?.message?.content || "";
   
-  // Extract Data URI or URL from text
   const b64Match = textContent.match(/data:image\/[a-zA-Z]+;base64,[^"'\s\)]+/);
   if (b64Match) return b64Match[0];
   
