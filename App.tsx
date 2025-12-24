@@ -135,7 +135,6 @@ const App: React.FC = () => {
   const dangerBtnClass = "w-12 h-12 rounded-[1.2rem] bg-red-500/10 border border-red-500/20 flex items-center justify-center active:scale-90 transition-all shrink-0";
 
   return (
-    /* 根容器：fixed inset-0 确保背景覆盖整个屏幕（包括状态栏下方） */
     <div className="fixed inset-0 bg-black overflow-hidden select-none text-white flex flex-col">
       <input 
         type="file" 
@@ -145,12 +144,8 @@ const App: React.FC = () => {
         className="hidden" 
       />
 
-      {/* 
-        主展示区调整：
-        pt-32: 增加顶部间距，避开刘海并让预览下移。
-        pb-52: 底部留出足够空间给 Tab Bar。
-      */}
-      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-6 pt-32 pb-52">
+      {/* Main Stage */}
+      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-6 pt-32 pb-44">
         {capturedImage ? (
           <div className={`relative w-full h-full flex items-center justify-center transition-all duration-700 ${(isGenerating || isResultLoading) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
              
@@ -235,7 +230,7 @@ const App: React.FC = () => {
 
           <div className="relative flex flex-col items-center justify-center gap-4 w-full px-12 text-center z-10">
             <h1 className="text-6xl md:text-8xl font-black tracking-[0.5em] mr-[-0.5em] uppercase animate-breath-blue drop-shadow-[0_0_20px_rgba(59,130,246,0.6)] leading-none">
-              MGEEEEEE
+              IMAGE
             </h1>
             <p className="text-white/40 text-[11px] md:text-xs font-bold uppercase tracking-[0.3em] mr-[-0.3em] animate-pulse">
               美好值得等待
@@ -244,8 +239,8 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Main Tab Bar */}
-      <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+32px)] left-8 right-8 z-50 pointer-events-none">
+      {/* Main Tab Bar - Adjusted bottom position to be lower */}
+      <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+16px)] left-6 right-6 z-50 pointer-events-none">
         <div className="pointer-events-auto flex items-center justify-between gap-1.5 h-20 px-4 bg-black/80 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_80px_rgba(0,0,0,0.9)] animate-in slide-in-from-bottom-10 duration-700">
           
           {!resultImage ? (
