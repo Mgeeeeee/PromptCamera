@@ -135,7 +135,7 @@ const App: React.FC = () => {
   const dangerBtnClass = "w-12 h-12 rounded-[1.2rem] bg-red-500/10 border border-red-500/20 flex items-center justify-center active:scale-90 transition-all shrink-0";
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden select-none text-white flex flex-col">
+    <div className="fixed top-0 left-0 w-full h-[100dvh] bg-black overflow-hidden select-none text-white flex flex-col">
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -240,7 +240,7 @@ const App: React.FC = () => {
       )}
 
       {/* Main Tab Bar - Optimized for Web with max-width and centering */}
-      <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+16px)] left-0 right-0 z-50 pointer-events-none flex justify-center px-6">
+      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+16px)] left-0 right-0 z-50 pointer-events-none flex justify-center px-6">
         <div className="pointer-events-auto flex items-center justify-between gap-1.5 h-20 px-4 w-full max-w-md bg-black/80 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_80px_rgba(0,0,0,0.9)] animate-in slide-in-from-bottom-10 duration-700">
           
           {!resultImage ? (
