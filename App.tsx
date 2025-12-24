@@ -17,7 +17,9 @@ const App: React.FC = () => {
   const [isResultLoading, setIsResultLoading] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const longPressTimer = useRef<number | null>(null);
 
   const [apiSettings, setApiSettings] = useState<ApiSettings>(() => {
     const saved = localStorage.getItem('ai_vision_settings');
@@ -69,6 +71,22 @@ const App: React.FC = () => {
         handleCapture(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  // Long press logic for Upload/Camera button
+  const handleUploadPointerDown = () => {
+    longPressTimer.current = window.setTimeout(() => {
+      setIsCameraOpen(true);
+      longPressTimer.current = null;
+    }, 500); // 500ms for long press
+  };
+
+  const handleUploadPointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      fileInputRef.current?.click();
+      longPressTimer.current = null;
     }
   };
 
@@ -127,21 +145,19 @@ const App: React.FC = () => {
         className="hidden" 
       />
 
-      {/* Main Adaptive Stage */}
-      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4 pt-4 pb-48">
+      {/* Main Adaptive Stage - Moved lower with pt-20 and justify-center refinement */}
+      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4 pt-20 pb-48">
         {capturedImage ? (
           <div className={`relative w-full h-full flex items-center justify-center transition-all duration-700 ${(isGenerating || isResultLoading) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
              
              {/* Radiating Edge Glow / Aura */}
              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="relative w-[80%] h-[80%] flex items-center justify-center">
-                   {/* Layer 1: Core Glow */}
                    <img 
                     src={capturedImage} 
                     alt="aura-1" 
                     className={`absolute w-full h-full object-contain blur-[40px] transition-opacity duration-1000 ${showOriginal || !resultImage ? 'opacity-80 scale-105' : 'opacity-0'}`}
                   />
-                  {/* Layer 2: Radiating Bloom */}
                   <img 
                     src={capturedImage} 
                     alt="aura-2" 
@@ -192,7 +208,7 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* Generating Overlay with Starry Sky Particles */}
+      {/* Generating Overlay */}
       {(isGenerating || isResultLoading) && (
         <div className="absolute inset-0 flex items-center justify-center z-[60] bg-black animate-in fade-in duration-300">
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -243,16 +259,14 @@ const App: React.FC = () => {
                 </svg>
               </button>
 
-              <button onClick={() => setIsCameraOpen(true)} disabled={isGenerating} className={commonBtnClass} title="Camera">
+              <button 
+                onPointerDown={handleUploadPointerDown}
+                onPointerUp={handleUploadPointerUp}
+                disabled={isGenerating} 
+                className={commonBtnClass} 
+                title="Upload (Click) / Camera (Long Press)"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 text-white/50">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
-                </svg>
-              </button>
-
-              <button onClick={() => fileInputRef.current?.click()} disabled={isGenerating} className={commonBtnClass} title="Upload">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 text-white/50">
-                  {/* Redrawn Clean Photo Icon (Absolute Path) */}
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75V6.75a2.25 2.25 0 0 1 2.25-2.25h15a2.25 2.25 0 0 1 2.25 2.25v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25z M11.25 9a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0z M21 14.25l-4.5-4.5L12 14.25l-3-3-4.5 4.5v3h16.5v-3z" />
                 </svg>
               </button>
