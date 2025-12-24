@@ -197,8 +197,8 @@ const App: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center animate-in fade-in duration-1000 text-center">
-            <h1 className="font-black tracking-[0.2em] mr-[-0.2em] uppercase text-white/5 text-7xl md:text-9xl leading-none">
-              VISION
+            <h1 className="font-black tracking-[0.2em] mr-[-0.2em] uppercase text-white/20 text-7xl md:text-9xl leading-none">
+              IMAGE
             </h1>
             <p className="mt-6 text-white/15 text-[10px] font-black uppercase tracking-[0.4em] mr-[-0.4em] bg-white/5 px-6 py-2.5 rounded-full border border-white/5">
               MGEEEEEE LAB
