@@ -3,10 +3,12 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CameraModule } from './components/CameraModule';
 import { PromptDialog } from './components/PromptDialog';
 import { SettingsDialog } from './components/SettingsDialog';
+import { ImageEditor } from './components/ImageEditor';
 import { generateAIImage } from './services/geminiService';
 import { ModelType, ApiSettings } from './types';
 
 const App: React.FC = () => {
+  const [preEditImage, setPreEditImage] = useState<string | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -47,10 +49,15 @@ const App: React.FC = () => {
   }, [apiSettings]);
 
   const handleCapture = (base64: string) => {
-    setCapturedImage(base64);
-    setResultImage(null);
+    setPreEditImage(base64);
     setIsCameraOpen(false);
-    runAI(base64, prompt);
+  };
+
+  const handleEditComplete = (editedBase64: string) => {
+    setPreEditImage(null);
+    setCapturedImage(editedBase64);
+    setResultImage(null);
+    runAI(editedBase64, prompt);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,8 +65,7 @@ const App: React.FC = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64 = reader.result as string;
-        handleCapture(base64);
+        handleCapture(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -73,12 +79,32 @@ const App: React.FC = () => {
 
   const handleDownload = async () => {
     if (!resultImage) return;
-    const link = document.createElement('a');
-    link.href = resultImage;
-    link.download = `ai_vision_${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    try {
+      // Use Web Share API if available (best for mobile)
+      if (navigator.share) {
+        const response = await fetch(resultImage);
+        const blob = await response.blob();
+        const file = new File([blob], `ai-vision-${Date.now()}.png`, { type: 'image/png' });
+        
+        await navigator.share({
+          files: [file],
+          title: 'AI Vision Art',
+          text: 'Check out this AI-generated image!',
+        });
+      } else {
+        // Fallback for desktop
+        const link = document.createElement('a');
+        link.href = resultImage;
+        link.download = `ai_vision_${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (err) {
+      console.error('Download failed:', err);
+      // Native save fallback is always available via long-press on the image
+    }
   };
 
   const toggleComparison = () => {
@@ -89,7 +115,6 @@ const App: React.FC = () => {
 
   return (
     <div className="relative h-screen w-screen bg-black overflow-hidden select-none text-white">
-      {/* Hidden File Input */}
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -98,14 +123,25 @@ const App: React.FC = () => {
         className="hidden" 
       />
 
-      {/* Immersive Background / Preview Layer */}
-      <div className="absolute inset-0 flex items-center justify-center bg-neutral-950">
+      {/* Adaptive Image Stage */}
+      <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
         {capturedImage ? (
-          <img 
-            src={showOriginal ? capturedImage : (resultImage || capturedImage)} 
-            alt="Result" 
-            className={`w-full h-full object-cover transition-all duration-1000 ${isGenerating ? 'blur-3xl opacity-40 scale-110' : 'blur-0 opacity-100 scale-100'}`}
-          />
+          <>
+            {/* Blurred background for atmosphere */}
+            <img 
+              src={showOriginal ? capturedImage : (resultImage || capturedImage)} 
+              alt="bg" 
+              className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-30 scale-125"
+            />
+            {/* Main Stage */}
+            <div className={`relative z-10 w-full h-full max-w-[95%] max-h-[85%] flex items-center justify-center p-4 transition-all duration-1000 ${isGenerating ? 'blur-2xl opacity-20 scale-90' : 'blur-0 opacity-100 scale-100'}`}>
+              <img 
+                src={showOriginal ? capturedImage : (resultImage || capturedImage)} 
+                alt="Display" 
+                className="max-w-full max-h-full object-contain rounded-2xl shadow-[0_0_100px_rgba(0,0,0,1)] border border-white/5"
+              />
+            </div>
+          </>
         ) : (
           <div className="flex flex-col items-center animate-in fade-in duration-1000">
             <h1 className="font-black tracking-[0.2em] uppercase text-white/5 text-8xl md:text-9xl">
@@ -116,16 +152,16 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* Processing State - Floating Overlay */}
+      {/* Generation Overlay */}
       {isGenerating && (
         <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
-          <h1 className="text-7xl font-black tracking-[0.3em] uppercase animate-breath-blue drop-shadow-2xl text-center px-6">
+          <h1 className="text-6xl font-black tracking-[0.3em] uppercase animate-breath-blue drop-shadow-2xl text-center px-6">
             IMAGE
           </h1>
         </div>
       )}
 
-      {/* Top Left - Settings Button */}
+      {/* Control Elements */}
       <div className="absolute top-10 left-6 z-50">
         <button 
           onClick={() => setIsSettingsOpen(true)}
@@ -138,26 +174,24 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {/* Top Right - Download (AI Result Only) */}
       <div className="absolute top-10 right-6 z-50 flex gap-4">
         {resultImage && !isGenerating && (
           <button 
             onClick={handleDownload}
-            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-black/40 border border-white/10 backdrop-blur-xl active:scale-90 transition-all shadow-2xl"
+            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white text-black active:scale-90 transition-all shadow-2xl"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-white/80">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
           </button>
         )}
       </div>
 
-      {/* Comparison Toggle */}
       {resultImage && !isGenerating && (
         <div className="absolute bottom-36 left-0 right-0 flex justify-center z-30 pointer-events-none">
           <button 
             onClick={toggleComparison}
-            className={`pointer-events-auto w-12 h-12 rounded-2xl backdrop-blur-3xl border flex items-center justify-center shadow-2xl active:scale-90 transition-all ${showOriginal ? 'bg-blue-600/60 border-blue-400 text-white' : 'bg-white/5 border-white/10 text-white/60'}`}
+            className={`pointer-events-auto w-12 h-12 rounded-2xl backdrop-blur-3xl border flex items-center justify-center shadow-2xl active:scale-90 transition-all ${showOriginal ? 'bg-blue-600 border-blue-400 text-white' : 'bg-white/5 border-white/10 text-white/60'}`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className={`w-5 h-5 transition-transform duration-500 ${showOriginal ? 'rotate-180' : 'rotate-0'}`}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -166,9 +200,8 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Bottom Main Floating Control Bar */}
-      <div className="absolute bottom-10 left-6 right-6 z-50 flex items-center justify-between gap-3 h-20 px-4 bg-black/40 border border-white/10 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-700">
-        {/* Prompt Button */}
+      {/* Control Bar */}
+      <div className="absolute bottom-10 left-6 right-6 z-50 flex items-center justify-between gap-3 h-20 px-4 bg-black/60 border border-white/10 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl animate-in slide-in-from-bottom-10 duration-700">
         <button 
           onClick={() => setIsPromptOpen(true)}
           className="w-12 h-12 rounded-[1.2rem] bg-white/5 border border-white/5 flex items-center justify-center active:scale-90 transition-all shrink-0"
@@ -178,9 +211,7 @@ const App: React.FC = () => {
           </svg>
         </button>
 
-        {/* Action Buttons: Camera & Upload */}
         <div className="flex-1 flex gap-2">
-          {/* Camera Button */}
           <button 
             onClick={() => setIsCameraOpen(true)}
             disabled={isGenerating}
@@ -192,7 +223,6 @@ const App: React.FC = () => {
             </svg>
           </button>
           
-          {/* Upload Button */}
           <button 
             onClick={() => fileInputRef.current?.click()}
             disabled={isGenerating}
@@ -204,7 +234,6 @@ const App: React.FC = () => {
           </button>
         </div>
 
-        {/* Regenerate Button */}
         <button 
           onClick={handleRegenerate}
           disabled={!capturedImage || isGenerating}
@@ -216,7 +245,13 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {/* Overlays */}
+      {preEditImage && (
+        <ImageEditor 
+          image={preEditImage} 
+          onSave={handleEditComplete} 
+          onCancel={() => setPreEditImage(null)} 
+        />
+      )}
       {isCameraOpen && <CameraModule onCapture={handleCapture} onClose={() => setIsCameraOpen(false)} />}
       {isPromptOpen && <PromptDialog initialPrompt={prompt} onSave={(p) => { setPrompt(p); setIsPromptOpen(false); }} onClose={() => setIsPromptOpen(false)} />}
       {isSettingsOpen && <SettingsDialog settings={apiSettings} onSave={(s) => { setApiSettings(s); setIsSettingsOpen(false); }} onClose={() => setIsSettingsOpen(false)} />}
