@@ -13,34 +13,47 @@ export const generateAIImage = async (
   }
 
   // 2. Default to official SDK (Direct Google Gemini)
+  // Always create a new instance right before the call to ensure the latest API key is used
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const base64Data = base64Image.split(',')[1] || base64Image;
   const selectedModel = apiSettings?.selectedModel || ModelType.FLASH;
 
   try {
+    // Determine configuration based on the model
+    const config: any = {};
+    if (selectedModel === ModelType.PRO) {
+      config.imageConfig = {
+        aspectRatio: "1:1",
+        imageSize: "1K"
+      };
+    } else {
+      config.imageConfig = {
+        aspectRatio: "1:1"
+      };
+    }
+
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: selectedModel,
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              inlineData: {
-                data: base64Data,
-                mimeType: 'image/jpeg',
-              },
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: 'image/jpeg',
             },
-            {
-              text: `Generate a new artistic image based on this photo. Prompt: ${prompt}. Output ONLY the image data.`,
-            },
-          ],
-        },
-      ],
+          },
+          {
+            text: `Generate a new artistic image based on this photo. Prompt: ${prompt}. Output ONLY the image data.`,
+          },
+        ],
+      },
+      config,
     });
 
     const candidate = response.candidates?.[0];
     if (!candidate) throw new Error("No response generated from Gemini");
 
+    // Iterate through all parts to find the image part
     for (const part of candidate.content.parts) {
       if (part.inlineData) {
         return `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
