@@ -135,7 +135,7 @@ const App: React.FC = () => {
   const dangerBtnClass = "w-12 h-12 rounded-[1.2rem] bg-red-500/10 border border-red-500/20 flex items-center justify-center active:scale-90 transition-all shrink-0";
 
   return (
-    /* Root container spans absolute full height. No top padding here to ensure solid black behind status bar. */
+    /* 根容器：fixed inset-0 确保背景覆盖整个屏幕（包括状态栏下方） */
     <div className="fixed inset-0 bg-black overflow-hidden select-none text-white flex flex-col">
       <input 
         type="file" 
@@ -145,14 +145,18 @@ const App: React.FC = () => {
         className="hidden" 
       />
 
-      {/* Main Stage: Using flex-1 to occupy space. Bottom padding respects tab bar. */}
-      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4 pt-16 pb-48">
+      {/* 
+        主展示区调整：
+        pt-32: 增加顶部间距，避开刘海并让预览下移。
+        pb-52: 底部留出足够空间给 Tab Bar。
+      */}
+      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-6 pt-32 pb-52">
         {capturedImage ? (
           <div className={`relative w-full h-full flex items-center justify-center transition-all duration-700 ${(isGenerating || isResultLoading) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
              
              {/* Radiating Edge Glow / Aura */}
              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="relative w-[80%] h-[80%] flex items-center justify-center">
+                <div className="relative w-[85%] h-[85%] flex items-center justify-center">
                    <img 
                     src={capturedImage} 
                     alt="aura-1" 
@@ -185,23 +189,23 @@ const App: React.FC = () => {
              <img 
               src={capturedImage} 
               alt="Original" 
-              className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_150px_rgba(0,0,0,1)] border border-white/10 transition-opacity duration-500 ${showOriginal || !resultImage ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              className={`absolute max-w-full max-h-full object-contain rounded-[2.5rem] shadow-[0_0_150px_rgba(0,0,0,1)] border border-white/10 transition-opacity duration-500 ${showOriginal || !resultImage ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             />
             {resultImage && (
               <img 
                 src={resultImage} 
                 alt="AI Result" 
                 onLoad={handleImageLoad}
-                className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_150px_rgba(0,0,0,1)] border border-white/10 transition-opacity duration-500 ${!showOriginal ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                className={`absolute max-w-full max-h-full object-contain rounded-[2.5rem] shadow-[0_0_150px_rgba(0,0,0,1)] border border-white/10 transition-opacity duration-500 ${!showOriginal ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
               />
             )}
           </div>
         ) : (
           <div className="flex flex-col items-center animate-in fade-in duration-1000 text-center">
-            <h1 className="font-black tracking-[0.2em] mr-[-0.2em] uppercase text-white/5 text-8xl md:text-9xl leading-none">
-              IMAGE
+            <h1 className="font-black tracking-[0.2em] mr-[-0.2em] uppercase text-white/5 text-7xl md:text-9xl leading-none">
+              VISION
             </h1>
-            <p className="mt-4 text-white/15 text-[10px] font-black uppercase tracking-[0.4em] mr-[-0.4em] bg-white/5 px-4 py-2 rounded-full border border-white/5">
+            <p className="mt-6 text-white/15 text-[10px] font-black uppercase tracking-[0.4em] mr-[-0.4em] bg-white/5 px-6 py-2.5 rounded-full border border-white/5">
               MGEEEEEE LAB
             </p>
           </div>
@@ -231,7 +235,7 @@ const App: React.FC = () => {
 
           <div className="relative flex flex-col items-center justify-center gap-4 w-full px-12 text-center z-10">
             <h1 className="text-6xl md:text-8xl font-black tracking-[0.5em] mr-[-0.5em] uppercase animate-breath-blue drop-shadow-[0_0_20px_rgba(59,130,246,0.6)] leading-none">
-              IMAGE
+              MGEEEEEE
             </h1>
             <p className="text-white/40 text-[11px] md:text-xs font-bold uppercase tracking-[0.3em] mr-[-0.3em] animate-pulse">
               美好值得等待
@@ -240,9 +244,9 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Main Tab Bar - Floating above bottom safe area */}
-      <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+24px)] left-6 right-6 z-50 pointer-events-none">
-        <div className="pointer-events-auto flex items-center justify-between gap-1.5 h-20 px-4 bg-black/80 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-10 duration-700">
+      {/* Main Tab Bar */}
+      <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+32px)] left-8 right-8 z-50 pointer-events-none">
+        <div className="pointer-events-auto flex items-center justify-between gap-1.5 h-20 px-4 bg-black/80 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_80px_rgba(0,0,0,0.9)] animate-in slide-in-from-bottom-10 duration-700">
           
           {!resultImage ? (
             <>
