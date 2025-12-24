@@ -2,8 +2,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { CameraModule } from './components/CameraModule';
 import { PromptDialog } from './components/PromptDialog';
+import { SettingsDialog } from './components/SettingsDialog';
 import { generateAIImage } from './services/geminiService';
-import { ModelType } from './types';
+import { ModelType, ApiSettings } from './types';
 
 const App: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -11,23 +12,37 @@ const App: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isPromptOpen, setIsPromptOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [apiSettings, setApiSettings] = useState<ApiSettings>(() => {
+    const saved = localStorage.getItem('ai_vision_settings');
+    return saved ? JSON.parse(saved) : {
+      apiKey: '',
+      baseUrl: 'https://api.tuzi-api.com/v1',
+      selectedModel: ModelType.FLASH,
+      useCustomProvider: false
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ai_vision_settings', JSON.stringify(apiSettings));
+  }, [apiSettings]);
 
   const runAI = useCallback(async (base64: string, p: string) => {
     setIsGenerating(true);
     setError(null);
     setShowOriginal(false);
     try {
-      const result = await generateAIImage(base64, p);
+      const result = await generateAIImage(base64, p, apiSettings);
       setResultImage(result);
     } catch (err: any) {
       setError(err.message || 'Generation service unavailable');
     } finally {
       setIsGenerating(false);
     }
-  }, []);
+  }, [apiSettings]);
 
   const handleCapture = (base64: string) => {
     setCapturedImage(base64);
@@ -92,13 +107,26 @@ const App: React.FC = () => {
       {/* Processing State - Floating Overlay */}
       {isGenerating && (
         <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
-          <h1 className="text-5xl font-black tracking-[0.2em] uppercase animate-breath-blue drop-shadow-2xl">
-            Image
+          <h1 className="text-5xl font-black tracking-[0.2em] uppercase animate-breath-blue drop-shadow-2xl text-center px-6">
+            Generating
           </h1>
         </div>
       )}
 
-      {/* Top Controls - Floating */}
+      {/* Top Left - Settings Button */}
+      <div className="absolute top-10 left-6 z-50">
+        <button 
+          onClick={() => setIsSettingsOpen(true)}
+          className="w-12 h-12 flex items-center justify-center rounded-2xl bg-black/40 border border-white/10 backdrop-blur-xl active:scale-90 transition-all shadow-2xl"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-white/80">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774a1.125 1.125 0 01.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.894.15c.542.09.94.56.94 1.11v1.094c0 .55-.398 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.164.398-.142.854.108 1.204l.527.738a1.125 1.125 0 01-.12 1.45l-.774.773a1.125 1.125 0 01-1.45.12l-.737-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527a1.125 1.125 0 01-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.11v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Top Right - Floating Actions */}
       <div className="absolute top-10 right-6 z-50 flex gap-4">
         {capturedImage && !isGenerating && (
           <button 
@@ -112,7 +140,7 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* Comparison Toggle - Floating Bottom Center of Image */}
+      {/* Comparison Toggle */}
       {resultImage && !isGenerating && (
         <div className="absolute bottom-36 left-0 right-0 flex justify-center z-30 pointer-events-none">
           <button 
@@ -128,8 +156,6 @@ const App: React.FC = () => {
 
       {/* Bottom Main Floating Control Bar */}
       <div className="absolute bottom-10 left-6 right-6 z-50 flex items-center justify-between gap-4 h-20 px-4 bg-black/40 border border-white/10 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-700">
-        
-        {/* Prompt Button */}
         <button 
           onClick={() => setIsPromptOpen(true)}
           className="w-14 h-14 rounded-[1.5rem] bg-white/5 border border-white/5 flex items-center justify-center active:scale-90 transition-all"
@@ -139,7 +165,6 @@ const App: React.FC = () => {
           </svg>
         </button>
 
-        {/* Shutter Button */}
         <button 
           onClick={() => setIsCameraOpen(true)}
           disabled={isGenerating}
@@ -151,7 +176,6 @@ const App: React.FC = () => {
           </svg>
         </button>
 
-        {/* Retry Button */}
         <button 
           onClick={handleRegenerate}
           disabled={!capturedImage || isGenerating}
@@ -163,31 +187,15 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {/* Error Toast */}
+      {/* Overlays */}
+      {isCameraOpen && <CameraModule onCapture={handleCapture} onClose={() => setIsCameraOpen(false)} />}
+      {isPromptOpen && <PromptDialog initialPrompt={prompt} onSave={(p) => { setPrompt(p); setIsPromptOpen(false); }} onClose={() => setIsPromptOpen(false)} />}
+      {isSettingsOpen && <SettingsDialog settings={apiSettings} onSave={(s) => { setApiSettings(s); setIsSettingsOpen(false); }} onClose={() => setIsSettingsOpen(false)} />}
+      
       {error && (
-        <div className="absolute top-24 left-6 right-6 bg-red-500/20 border border-red-500/30 text-red-200 px-6 py-4 rounded-3xl text-center backdrop-blur-3xl animate-in fade-in slide-in-from-top-4 z-[100]">
+        <div className="absolute top-24 left-6 right-6 bg-red-500/20 border border-red-500/30 text-red-200 px-6 py-4 rounded-3xl text-center backdrop-blur-3xl z-[120]">
           <p className="text-xs font-bold tracking-wider">{error}</p>
         </div>
-      )}
-
-      {/* Camera Module Overlay */}
-      {isCameraOpen && (
-        <CameraModule 
-          onCapture={handleCapture}
-          onClose={() => setIsCameraOpen(false)}
-        />
-      )}
-
-      {/* Prompt Dialog Overlay */}
-      {isPromptOpen && (
-        <PromptDialog 
-          initialPrompt={prompt}
-          onSave={(p) => {
-            setPrompt(p);
-            setIsPromptOpen(false);
-          }}
-          onClose={() => setIsPromptOpen(false)}
-        />
       )}
     </div>
   );

@@ -1,4 +1,11 @@
 
+export interface ApiSettings {
+  apiKey: string;
+  baseUrl: string;
+  selectedModel: string;
+  useCustomProvider: boolean;
+}
+
 export interface AppState {
   capturedImage: string | null;
   resultImage: string | null;
