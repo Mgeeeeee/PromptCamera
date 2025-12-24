@@ -7,12 +7,12 @@ export const generateAIImage = async (
   prompt: string,
   apiSettings?: ApiSettings
 ): Promise<string> => {
-  // 1. 如果配置了自定义代理且启用了该功能，优先使用代理逻辑
+  // 1. If custom provider is configured and enabled, use that logic
   if (apiSettings?.useCustomProvider && apiSettings.apiKey && apiSettings.baseUrl) {
     return generateWithCustomProvider(base64Image, prompt, apiSettings);
   }
 
-  // 2. 默认使用官方 SDK (Gemini 3 系列)
+  // 2. Default to official SDK (Direct Google Gemini)
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const base64Data = base64Image.split(',')[1] || base64Image;
 
@@ -30,7 +30,7 @@ export const generateAIImage = async (
               },
             },
             {
-              text: `Generate a new artistic image based on this photo. Prompt: ${prompt}. Output only the image.`,
+              text: `Generate a new artistic image based on this photo. Prompt: ${prompt}. Output ONLY the image data.`,
             },
           ],
         },
@@ -42,7 +42,11 @@ export const generateAIImage = async (
 
     for (const part of candidate.content.parts) {
       if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+        return `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
+      }
+      if (part.text && part.text.includes('data:image')) {
+        const match = part.text.match(/data:image\/[a-zA-Z]+;base64,[^"'\s\)]+/);
+        if (match) return match[0];
       }
     }
 
@@ -64,7 +68,7 @@ async function generateWithCustomProvider(
   
   const base64Data = base64Image.split(',')[1] || base64Image;
 
-  // 策略 A: 尝试使用 Gemini 原生 API 结构 (Google REST API 格式)
+  // Try Gemini-style Native REST endpoint first if it's a Gemini model
   if (isGeminiModel) {
     const url = `${baseUrl}/models/${settings.selectedModel}:generateContent?key=${settings.apiKey}`;
     
@@ -78,7 +82,7 @@ async function generateWithCustomProvider(
               role: 'user',
               parts: [
                 { inlineData: { data: base64Data, mimeType: 'image/jpeg' } },
-                { text: `Artistic image transformation: ${prompt}` }
+                { text: `Artistic image transformation: ${prompt}. Please return the resulting image data directly in the response.` }
               ]
             }
           ]
@@ -88,32 +92,50 @@ async function generateWithCustomProvider(
       const data = await response.json();
       
       if (!response.ok) {
+        // Fallback to OpenAI compatible if the endpoint is not found or method is not allowed
+        if (response.status === 404 || response.status === 405) {
+           return fetchViaOpenAICompatible(baseUrl, base64Image, prompt, settings);
+        }
         throw new Error(data.error?.message || `Proxy error ${response.status}`);
       }
 
-      // 深度搜索返回结果中的图片数据
-      // 路径 1: Google 原生格式 candidates[0].content.parts[i].inlineData
-      const candidates = data.candidates || [];
-      for (const cand of candidates) {
-        const parts = cand.content?.parts || [];
-        for (const part of parts) {
-          if (part.inlineData?.data) {
-            return `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
+      // 1. Try standard Gemini candidate structure
+      if (data.candidates && data.candidates.length > 0) {
+        for (const cand of data.candidates) {
+          const parts = cand.content?.parts || [];
+          for (const part of parts) {
+            if (part.inlineData?.data) {
+              return `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
+            }
+            if (part.text) {
+              const b64Match = part.text.match(/data:image\/[a-zA-Z]+;base64,[^"'\s\)]+/);
+              if (b64Match) return b64Match[0];
+              const urlMatch = part.text.match(/https?:\/\/[^\s"'\)]+\.(jpg|jpeg|png|webp|gif)/i);
+              if (urlMatch) return urlMatch[0];
+            }
           }
         }
       }
 
-      // 路径 2: 某些代理会把图片放在 OpenAI 风格的格式里，即使调用的是 Gemini 接口
-      if (data.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`;
-      if (data.data?.[0]?.url) return data.data[0].url;
+      // 2. Handle cases where proxy uses OpenAI-style structure even on Gemini endpoint
+      if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+        const item = data.data[0];
+        if (item.b64_json) return `data:image/png;base64,${item.b64_json}`;
+        if (item.url) return item.url;
+      }
 
-      console.warn("Unexpected Proxy Response Structure:", data);
-      throw new Error("Could not find image data in response. The model might have returned text instead.");
+      // 3. Last chance: Check root level for common fields
+      if (data.url) return data.url;
+      if (data.image) return data.image;
+
+      console.warn("Could not find image in Gemini response structure:", data);
+      
+      // If we found nothing but didn't throw yet, try OpenAI-style
+      return fetchViaOpenAICompatible(baseUrl, base64Image, prompt, settings);
       
     } catch (e: any) {
-      // 如果报错是 404 或者 Unmarshal 失败，说明代理可能不支持 :generateContent 路径，尝试 OpenAI 兼容路径
-      if (e.message.includes('404') || e.message.includes('marshal')) {
-        return fetchViaOpenAICompatible(baseUrl, base64Image, prompt, settings);
+      if (e.message.includes('Proxy error') || e.message.includes('fetch')) {
+         return fetchViaOpenAICompatible(baseUrl, base64Image, prompt, settings);
       }
       throw e;
     }
@@ -128,8 +150,46 @@ async function fetchViaOpenAICompatible(
   prompt: string,
   settings: ApiSettings
 ): Promise<string> {
-  // 针对 Tuzi API 等 OpenAI 兼容接口的格式
+  // Most proxies for image generation expose /images/generations
   const url = `${baseUrl}/images/generations`;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${settings.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: settings.selectedModel,
+        prompt: `Artistic transformation: ${prompt}`,
+        image: base64Image, // Used by some specialized image-to-image proxies
+        n: 1,
+        size: "1024x1024",
+        response_format: "b64_json"
+      })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      const b64 = data.data?.[0]?.b64_json || data.data?.[0]?.url;
+      if (b64) return b64.startsWith('http') ? b64 : `data:image/png;base64,${b64}`;
+    }
+    
+    // If standard image endpoint fails, it might be a multi-modal chat model
+    return fetchViaChatCompletions(baseUrl, base64Image, prompt, settings);
+
+  } catch (err) {
+    return fetchViaChatCompletions(baseUrl, base64Image, prompt, settings);
+  }
+}
+
+async function fetchViaChatCompletions(
+  baseUrl: string,
+  base64Image: string,
+  prompt: string,
+  settings: ApiSettings
+): Promise<string> {
+  const url = `${baseUrl}/chat/completions`;
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -138,19 +198,29 @@ async function fetchViaOpenAICompatible(
     },
     body: JSON.stringify({
       model: settings.selectedModel,
-      prompt: `Transform this image with style: ${prompt}`,
-      image: base64Image, // 某些代理直接传完整 base64
-      n: 1,
-      size: "1024x1024",
-      response_format: "b64_json"
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: `Transform this image into a new artistic piece. Prompt: ${prompt}. Please provide the image data in the final response.` },
+            { type: "image_url", image_url: { url: base64Image } }
+          ]
+        }
+      ]
     })
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error?.message || 'Standard API Error');
+  if (!response.ok) throw new Error(data.error?.message || 'Proxy Chat API Error');
 
-  const b64 = data.data?.[0]?.b64_json || data.data?.[0]?.url;
-  if (b64) return b64.startsWith('http') ? b64 : `data:image/png;base64,${b64}`;
+  const textContent = data.choices?.[0]?.message?.content || "";
   
-  throw new Error("Failed to extract image from standard provider response.");
+  // Extract Data URI or URL from text
+  const b64Match = textContent.match(/data:image\/[a-zA-Z]+;base64,[^"'\s\)]+/);
+  if (b64Match) return b64Match[0];
+  
+  const urlMatch = textContent.match(/https?:\/\/[^\s"'\)]+\.(jpg|jpeg|png|webp|gif)/i);
+  if (urlMatch) return urlMatch[0];
+
+  throw new Error("No image data found in the AI response. It may have only returned text.");
 }
