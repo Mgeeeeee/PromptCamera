@@ -24,7 +24,7 @@ const App: React.FC = () => {
       apiKey: '',
       baseUrl: 'https://api.tu-zi.com/v1/',
       selectedModel: ModelType.FLASH,
-      useCustomProvider: false
+      useCustomProvider: true
     };
   });
 
