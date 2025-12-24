@@ -19,19 +19,21 @@ export const generateAIImage = async (
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: ModelType.FLASH,
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: 'image/jpeg',
+      contents: [
+        {
+          parts: [
+            {
+              inlineData: {
+                data: base64Data,
+                mimeType: 'image/jpeg',
+              },
             },
-          },
-          {
-            text: `Based on this photo, create a new artistic image following this prompt: ${prompt}. Maintain the general composition and subject but transform the style and details as requested.`,
-          },
-        ],
-      },
+            {
+              text: `Based on this photo, create a new artistic image following this prompt: ${prompt}. Maintain the general composition and subject but transform the style and details as requested.`,
+            },
+          ],
+        },
+      ],
     });
 
     const candidate = response.candidates?.[0];
@@ -45,7 +47,7 @@ export const generateAIImage = async (
 
     throw new Error("AI returned text but no image part.");
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
+    console.error("Gemini SDK Error:", error);
     throw error;
   }
 };
@@ -58,7 +60,6 @@ async function generateWithCustomProvider(
   const isGeminiModel = settings.selectedModel.toLowerCase().includes('gemini');
   const baseUrl = settings.baseUrl.endsWith('/') ? settings.baseUrl.slice(0, -1) : settings.baseUrl;
   
-  // If it's a Gemini model being proxied, we try to use the Gemini content format via a direct fetch
   if (isGeminiModel) {
     const url = `${baseUrl}/models/${settings.selectedModel}:generateContent?key=${settings.apiKey}`;
     const base64Data = base64Image.split(',')[1] || base64Image;
@@ -67,12 +68,14 @@ async function generateWithCustomProvider(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: {
-          parts: [
-            { inlineData: { data: base64Data, mimeType: 'image/jpeg' } },
-            { text: `Artistic transformation: ${prompt}` }
-          ]
-        }
+        contents: [
+          {
+            parts: [
+              { inlineData: { data: base64Data, mimeType: 'image/jpeg' } },
+              { text: `Artistic transformation: ${prompt}` }
+            ]
+          }
+        ]
       })
     });
 
@@ -86,9 +89,7 @@ async function generateWithCustomProvider(
     if (imagePart) return `data:image/png;base64,${imagePart.inlineData.data}`;
     throw new Error("No image in proxy response");
   } else {
-    // Generic OpenAI-compatible image generation (DALL-E style)
-    // Note: Standard OpenAI /v1/images/generations doesn't support image-to-image with text prompts easily in one call
-    // but many proxies adapt it. Here we use a standard image gen fallback.
+    // OpenAI-compatible provider
     const url = `${baseUrl}/images/generations`;
     const response = await fetch(url, {
       method: 'POST',
@@ -98,10 +99,7 @@ async function generateWithCustomProvider(
       },
       body: JSON.stringify({
         model: settings.selectedModel,
-        prompt: `Transform this scene: ${prompt}`,
-        // Note: Standard DALL-E doesn't take an 'image' field in 'generations', 
-        // usually 'edits' or 'variations' is used. 
-        // For simplicity with common proxies:
+        prompt: `Artistic transformation of this scene: ${prompt}`,
         image: base64Image, 
         n: 1,
         size: "1024x1024",
