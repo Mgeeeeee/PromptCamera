@@ -148,19 +148,23 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* Loading State Animation */}
+      {/* Generation Overlay */}
       {isGenerating && (
-        <div className="absolute inset-0 flex items-center justify-center z-[60] pointer-events-none">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-[4px]" />
-          <h1 className="relative text-5xl font-black tracking-[0.5em] uppercase animate-breath-blue drop-shadow-[0_0_20px_rgba(59,130,246,0.6)] text-center px-6">
-            TRANSFORMING
-          </h1>
+        <div className="absolute inset-0 flex items-center justify-center z-[60] pointer-events-none px-6">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[6px]" />
+          <div className="relative flex flex-col items-center gap-4 w-full max-w-sm">
+            <h1 className="text-5xl md:text-7xl font-black tracking-[0.5em] uppercase animate-breath-blue drop-shadow-[0_0_20px_rgba(59,130,246,0.6)] text-center leading-tight">
+              IMAGE
+            </h1>
+            <p className="text-white/40 text-[10px] md:text-xs font-bold uppercase tracking-[0.1em] text-center animate-pulse whitespace-nowrap">
+              请耐心等待不要退离开界面
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Floating Action Buttons Area - Repositioned to be closer together for single-hand use */}
+      {/* Floating Action Buttons Area */}
       <div className="absolute bottom-36 left-0 right-0 flex justify-center items-center gap-5 z-30 pointer-events-none px-6">
-        {/* Settings */}
         <button 
           onClick={() => setIsSettingsOpen(true)}
           className="pointer-events-auto w-12 h-12 flex items-center justify-center rounded-2xl bg-black/60 border border-white/10 backdrop-blur-2xl active:scale-90 transition-all shadow-2xl"
@@ -171,7 +175,6 @@ const App: React.FC = () => {
           </svg>
         </button>
 
-        {/* Comparison Toggle */}
         <button 
           onClick={toggleComparison}
           disabled={!capturedImage || isGenerating}
@@ -182,7 +185,6 @@ const App: React.FC = () => {
           </svg>
         </button>
 
-        {/* Smart Download */}
         <button 
           onClick={handleDownload}
           disabled={!capturedImage || isGenerating}
@@ -194,10 +196,9 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {/* Main Tab Bar Area - Fully Immersive with safe area padding inside */}
+      {/* Main Tab Bar Area */}
       <div className="absolute bottom-6 left-6 right-6 z-50 pointer-events-none">
         <div className="pointer-events-auto flex items-center justify-between gap-3 h-20 px-4 bg-black/80 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-10 duration-700">
-          {/* Prompt Editor */}
           <button 
             onClick={() => setIsPromptOpen(true)}
             className="w-12 h-12 rounded-[1.2rem] bg-white/5 border border-white/5 flex items-center justify-center active:scale-90 transition-all shrink-0"
@@ -207,7 +208,6 @@ const App: React.FC = () => {
             </svg>
           </button>
 
-          {/* Primary Interaction (Camera/Upload) */}
           <div className="flex-1 flex gap-2">
             <button 
               onClick={() => setIsCameraOpen(true)}
@@ -231,7 +231,6 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          {/* Regenerate Action */}
           <button 
             onClick={handleRegenerate}
             disabled={!capturedImage || isGenerating}
