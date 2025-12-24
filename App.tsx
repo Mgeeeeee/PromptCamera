@@ -121,40 +121,40 @@ const App: React.FC = () => {
         className="hidden" 
       />
 
-      {/* Cross-fading ambient background */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        {capturedImage && (
-          <>
-            <img 
-              src={capturedImage} 
-              alt="bg-orig" 
-              className={`absolute inset-0 w-full h-full object-cover blur-[100px] scale-125 transition-opacity duration-1000 ${showOriginal || !resultImage ? 'opacity-30' : 'opacity-0'}`}
-            />
-            {resultImage && (
-              <img 
-                src={resultImage} 
-                alt="bg-ai" 
-                className={`absolute inset-0 w-full h-full object-cover blur-[100px] scale-125 transition-opacity duration-1000 ${!showOriginal ? 'opacity-30' : 'opacity-0'}`}
-              />
-            )}
-          </>
-        )}
-      </div>
-
       {/* Main Adaptive Stage */}
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4 pt-4 pb-48">
         {capturedImage ? (
-          <div className={`relative w-full h-full flex items-center justify-center transition-all duration-1000 ${isGenerating ? 'blur-3xl opacity-10 scale-95' : 'blur-0 opacity-100 scale-100'}`}>
+          <div className={`relative w-full h-full flex items-center justify-center transition-all duration-1000 ${isGenerating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+             
+             {/* Refined Aura Effect: Subtle localized glow behind image periphery */}
+             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="relative w-full h-full flex items-center justify-center">
+                   <img 
+                    src={capturedImage} 
+                    alt="aura-orig" 
+                    className={`absolute w-[95%] h-[95%] object-contain blur-[50px] transition-opacity duration-1000 ${showOriginal || !resultImage ? 'opacity-60' : 'opacity-0'}`}
+                  />
+                  {resultImage && (
+                    <img 
+                      src={resultImage} 
+                      alt="aura-ai" 
+                      className={`absolute w-[95%] h-[95%] object-contain blur-[50px] transition-opacity duration-1000 ${!showOriginal ? 'opacity-60' : 'opacity-0'}`}
+                    />
+                  )}
+                </div>
+             </div>
+
+             {/* Main focused images */}
              <img 
               src={capturedImage} 
               alt="Original" 
-              className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.8)] border border-white/5 transition-opacity duration-500 ${showOriginal || !resultImage ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_120px_rgba(0,0,0,0.95)] border border-white/5 transition-opacity duration-500 ${showOriginal || !resultImage ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             />
             {resultImage && (
               <img 
                 src={resultImage} 
                 alt="AI Result" 
-                className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.8)] border border-white/5 transition-opacity duration-500 ${!showOriginal ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_120px_rgba(0,0,0,0.95)] border border-white/5 transition-opacity duration-500 ${!showOriginal ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
               />
             )}
           </div>
@@ -170,15 +170,33 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* Generating Overlay */}
+      {/* Generating Overlay with Starry Sky Particles */}
       {isGenerating && (
-        <div className="absolute inset-0 flex items-center justify-center z-[60] pointer-events-none">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[8px]" />
+        <div className="absolute inset-0 flex items-center justify-center z-[60] bg-black">
+          {/* Starry Sky Particle Effect */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {[...Array(50)].map((_, i) => (
+              <div 
+                key={i} 
+                className="absolute bg-white rounded-full"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  width: `${1 + Math.random() * 2}px`,
+                  height: `${1 + Math.random() * 2}px`,
+                  boxShadow: '0 0 5px rgba(255,255,255,0.8)',
+                  animation: `star-twinkle ${3 + Math.random() * 4}s ease-in-out infinite, star-drift ${20 + Math.random() * 20}s linear infinite alternate`,
+                  animationDelay: `${Math.random() * 5}s`
+                }}
+              />
+            ))}
+          </div>
+
           <div className="relative flex flex-col items-center justify-center gap-4 w-full px-12 text-center">
             <h1 className="text-6xl md:text-8xl font-black tracking-[0.5em] mr-[-0.5em] uppercase animate-breath-blue drop-shadow-[0_0_20px_rgba(59,130,246,0.6)] leading-none">
               IMAGE
             </h1>
-            <p className="text-white/40 text-[10px] md:text-xs font-bold uppercase tracking-[0.1em] animate-pulse">
+            <p className="text-white/40 text-[11px] md:text-xs font-bold uppercase tracking-[0.3em] mr-[-0.3em] animate-pulse">
               美好值得等待
             </p>
           </div>
