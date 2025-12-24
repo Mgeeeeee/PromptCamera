@@ -24,7 +24,7 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('ai_vision_settings');
     return saved ? JSON.parse(saved) : {
       apiKey: '',
-      baseUrl: 'https://api.tuzi-api.com/v1',
+      baseUrl: 'https://api.tu-zi.com/v1/',
       selectedModel: ModelType.FLASH,
       useCustomProvider: false
     };
@@ -81,7 +81,6 @@ const App: React.FC = () => {
     if (!resultImage) return;
 
     try {
-      // Use Web Share API if available (best for mobile)
       if (navigator.share) {
         const response = await fetch(resultImage);
         const blob = await response.blob();
@@ -93,7 +92,6 @@ const App: React.FC = () => {
           text: 'Check out this AI-generated image!',
         });
       } else {
-        // Fallback for desktop
         const link = document.createElement('a');
         link.href = resultImage;
         link.download = `ai_vision_${Date.now()}.png`;
@@ -103,7 +101,6 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error('Download failed:', err);
-      // Native save fallback is always available via long-press on the image
     }
   };
 
@@ -127,18 +124,16 @@ const App: React.FC = () => {
       <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
         {capturedImage ? (
           <>
-            {/* Blurred background for atmosphere */}
             <img 
               src={showOriginal ? capturedImage : (resultImage || capturedImage)} 
               alt="bg" 
-              className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-30 scale-125"
+              className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-30 scale-125 transition-opacity duration-1000"
             />
-            {/* Main Stage */}
-            <div className={`relative z-10 w-full h-full max-w-[95%] max-h-[85%] flex items-center justify-center p-4 transition-all duration-1000 ${isGenerating ? 'blur-2xl opacity-20 scale-90' : 'blur-0 opacity-100 scale-100'}`}>
+            <div className={`relative z-10 w-full h-full max-w-[95%] max-h-[85%] flex items-center justify-center p-4 transition-all duration-1000 ${isGenerating ? 'blur-3xl opacity-10 scale-90' : 'blur-0 opacity-100 scale-100'}`}>
               <img 
                 src={showOriginal ? capturedImage : (resultImage || capturedImage)} 
                 alt="Display" 
-                className="max-w-full max-h-full object-contain rounded-2xl shadow-[0_0_100px_rgba(0,0,0,1)] border border-white/5"
+                className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl border border-white/5"
               />
             </div>
           </>
@@ -152,17 +147,17 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* Generation Overlay */}
+      {/* Generation Overlay - Fixed for purely text-based ethereal look */}
       {isGenerating && (
-        <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
-          <h1 className="text-6xl font-black tracking-[0.3em] uppercase animate-breath-blue drop-shadow-2xl text-center px-6">
+        <div className="absolute inset-0 flex items-center justify-center z-[60] bg-black/40 backdrop-blur-sm pointer-events-none">
+          <h1 className="text-6xl font-black tracking-[0.4em] uppercase animate-breath-blue drop-shadow-[0_0_20px_rgba(59,130,246,0.5)] text-center px-6">
             IMAGE
           </h1>
         </div>
       )}
 
       {/* Control Elements */}
-      <div className="absolute top-10 left-6 z-50">
+      <div className="absolute top-12 left-6 z-50">
         <button 
           onClick={() => setIsSettingsOpen(true)}
           className="w-12 h-12 flex items-center justify-center rounded-2xl bg-black/40 border border-white/10 backdrop-blur-xl active:scale-90 transition-all shadow-2xl"
@@ -174,7 +169,7 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      <div className="absolute top-10 right-6 z-50 flex gap-4">
+      <div className="absolute top-12 right-6 z-50 flex gap-4">
         {resultImage && !isGenerating && (
           <button 
             onClick={handleDownload}
