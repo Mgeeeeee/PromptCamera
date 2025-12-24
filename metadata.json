@@ -1,7 +1,5 @@
 {
   "name": "PromptCamera",
   "description": "A mobile-first creative tool that captures photos and transforms them using Gemini's Nano Banana models based on custom prompts.",
-  "requestFramePermissions": [
-    "camera"
-  ]
+  "requestFramePermissions": []
 }

@@ -10,7 +10,6 @@ export interface AppState {
   capturedImage: string | null;
   resultImage: string | null;
   prompt: string;
-  isCameraOpen: boolean;
   isGenerating: boolean;
   error: string | null;
 }

@@ -1,6 +1,5 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { CameraModule } from './components/CameraModule';
 import { PromptDialog } from './components/PromptDialog';
 import { SettingsDialog } from './components/SettingsDialog';
 import { generateAIImage } from './services/geminiService';
@@ -10,7 +9,6 @@ const App: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -19,7 +17,6 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const longPressTimer = useRef<number | null>(null);
 
   const [apiSettings, setApiSettings] = useState<ApiSettings>(() => {
     const saved = localStorage.getItem('ai_vision_settings');
@@ -56,7 +53,6 @@ const App: React.FC = () => {
   };
 
   const handleCapture = (base64: string) => {
-    setIsCameraOpen(false);
     setCapturedImage(base64);
     setResultImage(null);
     setError(null);
@@ -71,21 +67,6 @@ const App: React.FC = () => {
         handleCapture(reader.result as string);
       };
       reader.readAsDataURL(file);
-    }
-  };
-
-  const handleUploadPointerDown = () => {
-    longPressTimer.current = window.setTimeout(() => {
-      setIsCameraOpen(true);
-      longPressTimer.current = null;
-    }, 500);
-  };
-
-  const handleUploadPointerUp = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      fileInputRef.current?.click();
-      longPressTimer.current = null;
     }
   };
 
@@ -259,11 +240,10 @@ const App: React.FC = () => {
               </button>
 
               <button 
-                onPointerDown={handleUploadPointerDown}
-                onPointerUp={handleUploadPointerUp}
+                onClick={() => fileInputRef.current?.click()}
                 disabled={isGenerating} 
                 className={commonBtnClass} 
-                title="Upload (Click) / Camera (Long Press)"
+                title="Upload"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 text-white/50">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75V6.75a2.25 2.25 0 0 1 2.25-2.25h15a2.25 2.25 0 0 1 2.25 2.25v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25z M11.25 9a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0z M21 14.25l-4.5-4.5L12 14.25l-3-3-4.5 4.5v3h16.5v-3z" />
@@ -306,7 +286,6 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {isCameraOpen && <CameraModule onCapture={handleCapture} onClose={() => setIsCameraOpen(false)} />}
       {isPromptOpen && <PromptDialog initialPrompt={prompt} onSave={(p) => { setPrompt(p); setIsPromptOpen(false); }} onClose={() => setIsPromptOpen(false)} />}
       {isSettingsOpen && <SettingsDialog settings={apiSettings} onSave={(s) => { setApiSettings(s); setIsSettingsOpen(false); }} onClose={() => setIsSettingsOpen(false)} />}
       
