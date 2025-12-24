@@ -1,20 +1,10 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CameraModule } from './components/CameraModule';
 import { PromptDialog } from './components/PromptDialog';
 import { SettingsDialog } from './components/SettingsDialog';
 import { generateAIImage } from './services/geminiService';
 import { ModelType, ApiSettings } from './types';
-
-// Declare aistudio for key selection following standard naming and types
-declare global {
-  interface AIStudio {
-    hasSelectedApiKey: () => Promise<boolean>;
-    openSelectKey: () => Promise<void>;
-  }
-  interface Window {
-    aistudio: AIStudio;
-  }
-}
 
 const App: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -34,7 +24,10 @@ const App: React.FC = () => {
   const [apiSettings, setApiSettings] = useState<ApiSettings>(() => {
     const saved = localStorage.getItem('ai_vision_settings');
     return saved ? JSON.parse(saved) : {
-      selectedModel: ModelType.FLASH
+      apiKey: '',
+      baseUrl: 'https://api.tu-zi.com/v1/',
+      selectedModel: ModelType.FLASH,
+      useCustomProvider: false
     };
   });
 
@@ -44,16 +37,6 @@ const App: React.FC = () => {
 
   const runAI = useCallback(async () => {
     if (!capturedImage) return;
-
-    // MANDATORY: API key selection for gemini-3-pro-image-preview
-    if (apiSettings.selectedModel === ModelType.PRO) {
-      const hasKey = await window.aistudio.hasSelectedApiKey();
-      if (!hasKey) {
-        await window.aistudio.openSelectKey();
-        // Proceeding after openSelectKey assumes success per guidelines to mitigate race condition
-      }
-    }
-
     setIsGenerating(true);
     setError(null);
     setShowOriginal(false);
@@ -62,17 +45,7 @@ const App: React.FC = () => {
       setIsResultLoading(true);
       setResultImage(result);
     } catch (err: any) {
-      // If the request fails with an error message containing "Requested entity was not found.",
-      // prompt the user to select a key again via openSelectKey().
-      if (err.message && err.message.includes("Requested entity was not found.")) {
-        await window.aistudio.openSelectKey();
-        setError("API Session expired or invalid project. Please re-select a paid API key.");
-      } else if (err.message === "API_KEY_REQUIRED") {
-        await window.aistudio.openSelectKey();
-        setError("Please select a valid API key in the dialog.");
-      } else {
-        setError(err.message || 'Generation service unavailable');
-      }
+      setError(err.message || 'Generation service unavailable');
       setIsGenerating(false);
     }
   }, [capturedImage, prompt, apiSettings]);
@@ -128,13 +101,25 @@ const App: React.FC = () => {
     if (!imageToDownload) return;
 
     try {
-      const filename = `mgeeeeee-art-${Date.now()}.png`;
-      const link = document.createElement('a');
-      link.href = imageToDownload;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const filename = `mgeeeeee-art-${showOriginal ? 'orig' : 'ai'}-${Date.now()}.png`;
+      if (navigator.share) {
+        const response = await fetch(imageToDownload);
+        const blob = await response.blob();
+        const file = new File([blob], filename, { type: 'image/png' });
+        
+        await navigator.share({
+          files: [file],
+          title: 'MGEEEEEE LAB Art',
+          text: showOriginal ? 'Original Photo' : 'AI Generated Art',
+        });
+      } else {
+        const link = document.createElement('a');
+        link.href = imageToDownload;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } catch (err) {
       console.error('Download failed:', err);
     }
@@ -160,7 +145,7 @@ const App: React.FC = () => {
       />
 
       {/* Main Stage */}
-      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-6 pt-32 pb-48">
+      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-6 pt-32 pb-44">
         {capturedImage ? (
           <div className={`relative w-full h-full flex items-center justify-center transition-all duration-700 ${(isGenerating || isResultLoading) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
              
@@ -254,13 +239,8 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Main Tab Bar - Fixed at bottom with padding for safe areas */}
-      <div 
-        className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center px-6"
-        style={{ 
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' 
-        }}
-      >
+      {/* Main Tab Bar - Optimized for Web with max-width and centering */}
+      <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+16px)] left-0 right-0 z-50 pointer-events-none flex justify-center px-6">
         <div className="pointer-events-auto flex items-center justify-between gap-1.5 h-20 px-4 w-full max-w-md bg-black/80 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_80px_rgba(0,0,0,0.9)] animate-in slide-in-from-bottom-10 duration-700">
           
           {!resultImage ? (
