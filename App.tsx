@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CameraModule } from './components/CameraModule';
 import { PromptDialog } from './components/PromptDialog';
 import { SettingsDialog } from './components/SettingsDialog';
@@ -16,6 +16,8 @@ const App: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [apiSettings, setApiSettings] = useState<ApiSettings>(() => {
     const saved = localStorage.getItem('ai_vision_settings');
     return saved ? JSON.parse(saved) : {
@@ -51,6 +53,18 @@ const App: React.FC = () => {
     runAI(base64, prompt);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        handleCapture(base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleRegenerate = () => {
     if (capturedImage) {
       runAI(capturedImage, prompt);
@@ -58,24 +72,13 @@ const App: React.FC = () => {
   };
 
   const handleDownload = async () => {
-    if (!capturedImage) return;
-
-    const download = (url: string, filename: string) => {
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    };
-
-    download(capturedImage, `original_${Date.now()}.jpg`);
-    
-    if (resultImage) {
-      setTimeout(() => {
-        download(resultImage, `ai_vision_${Date.now()}.png`);
-      }, 300);
-    }
+    if (!resultImage) return;
+    const link = document.createElement('a');
+    link.href = resultImage;
+    link.download = `ai_vision_${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const toggleComparison = () => {
@@ -86,6 +89,15 @@ const App: React.FC = () => {
 
   return (
     <div className="relative h-screen w-screen bg-black overflow-hidden select-none text-white">
+      {/* Hidden File Input */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileUpload} 
+        accept="image/*" 
+        className="hidden" 
+      />
+
       {/* Immersive Background / Preview Layer */}
       <div className="absolute inset-0 flex items-center justify-center bg-neutral-950">
         {capturedImage ? (
@@ -107,8 +119,8 @@ const App: React.FC = () => {
       {/* Processing State - Floating Overlay */}
       {isGenerating && (
         <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
-          <h1 className="text-5xl font-black tracking-[0.2em] uppercase animate-breath-blue drop-shadow-2xl text-center px-6">
-            Generating
+          <h1 className="text-7xl font-black tracking-[0.3em] uppercase animate-breath-blue drop-shadow-2xl text-center px-6">
+            IMAGE
           </h1>
         </div>
       )}
@@ -126,9 +138,9 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {/* Top Right - Floating Actions */}
+      {/* Top Right - Download (AI Result Only) */}
       <div className="absolute top-10 right-6 z-50 flex gap-4">
-        {capturedImage && !isGenerating && (
+        {resultImage && !isGenerating && (
           <button 
             onClick={handleDownload}
             className="w-12 h-12 flex items-center justify-center rounded-2xl bg-black/40 border border-white/10 backdrop-blur-xl active:scale-90 transition-all shadow-2xl"
@@ -155,31 +167,48 @@ const App: React.FC = () => {
       )}
 
       {/* Bottom Main Floating Control Bar */}
-      <div className="absolute bottom-10 left-6 right-6 z-50 flex items-center justify-between gap-4 h-20 px-4 bg-black/40 border border-white/10 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-700">
+      <div className="absolute bottom-10 left-6 right-6 z-50 flex items-center justify-between gap-3 h-20 px-4 bg-black/40 border border-white/10 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-700">
+        {/* Prompt Button */}
         <button 
           onClick={() => setIsPromptOpen(true)}
-          className="w-14 h-14 rounded-[1.5rem] bg-white/5 border border-white/5 flex items-center justify-center active:scale-90 transition-all"
+          className="w-12 h-12 rounded-[1.2rem] bg-white/5 border border-white/5 flex items-center justify-center active:scale-90 transition-all shrink-0"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-white/50">
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
           </svg>
         </button>
 
-        <button 
-          onClick={() => setIsCameraOpen(true)}
-          disabled={isGenerating}
-          className="flex-1 h-14 bg-white rounded-2xl flex items-center justify-center active:scale-95 disabled:opacity-20 transition-all shadow-[0_4px_30px_rgba(255,255,255,0.2)]"
-        >
-           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-black">
-            <path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z" />
-            <path fillRule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.742 2.742 0 012.332-1.39zM9 12.75a3 3 0 116 0 3 3 0 01-6 0z" clipRule="evenodd" />
-          </svg>
-        </button>
+        {/* Action Buttons: Camera & Upload */}
+        <div className="flex-1 flex gap-2">
+          {/* Camera Button */}
+          <button 
+            onClick={() => setIsCameraOpen(true)}
+            disabled={isGenerating}
+            className="flex-1 h-14 bg-white rounded-2xl flex items-center justify-center active:scale-95 disabled:opacity-20 transition-all shadow-[0_4px_30px_rgba(255,255,255,0.2)]"
+          >
+             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-black">
+              <path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z" />
+              <path fillRule="evenodd" d="M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.742 2.742 0 012.332-1.39zM9 12.75a3 3 0 116 0 3 3 0 01-6 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+          
+          {/* Upload Button */}
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isGenerating}
+            className="flex-1 h-14 bg-white/10 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center active:scale-95 disabled:opacity-20 transition-all"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 text-white/80">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6.75a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6.75v12.75a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+            </svg>
+          </button>
+        </div>
 
+        {/* Regenerate Button */}
         <button 
           onClick={handleRegenerate}
           disabled={!capturedImage || isGenerating}
-          className="w-14 h-14 rounded-[1.5rem] bg-white/5 border border-white/5 flex items-center justify-center active:scale-90 transition-all disabled:opacity-5"
+          className="w-12 h-12 rounded-[1.2rem] bg-white/5 border border-white/5 flex items-center justify-center active:scale-90 transition-all disabled:opacity-5 shrink-0"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-white/50">
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
