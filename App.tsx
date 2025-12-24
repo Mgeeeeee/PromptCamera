@@ -52,6 +52,7 @@ const App: React.FC = () => {
     setCapturedImage(base64);
     setResultImage(null);
     setError(null);
+    setShowOriginal(false);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,8 +108,7 @@ const App: React.FC = () => {
     }
   };
 
-  const commonBtnClass = "w-12 h-12 rounded-[1.2rem] bg-white/5 border border-white/5 flex items-center justify-center active:scale-90 transition-all shrink-0 disabled:opacity-10";
-  const primaryBtnClass = "w-12 h-12 rounded-[1.2rem] bg-white border border-white flex items-center justify-center active:scale-90 transition-all shrink-0 disabled:opacity-20 shadow-[0_0_20px_rgba(255,255,255,0.1)]";
+  const commonBtnClass = "w-12 h-12 rounded-[1.2rem] bg-white/5 border border-white/5 flex items-center justify-center active:scale-90 transition-all shrink-0 disabled:opacity-40";
   const dangerBtnClass = "w-12 h-12 rounded-[1.2rem] bg-red-500/10 border border-red-500/20 flex items-center justify-center active:scale-90 transition-all shrink-0";
 
   return (
@@ -121,14 +121,23 @@ const App: React.FC = () => {
         className="hidden" 
       />
 
-      {/* Full-bleed blurred background */}
+      {/* Cross-fading ambient background */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         {capturedImage && (
-          <img 
-            src={showOriginal ? capturedImage : (resultImage || capturedImage)} 
-            alt="ambient-bg" 
-            className="w-full h-full object-cover blur-[100px] opacity-30 scale-125 transition-opacity duration-1000"
-          />
+          <>
+            <img 
+              src={capturedImage} 
+              alt="bg-orig" 
+              className={`absolute inset-0 w-full h-full object-cover blur-[100px] scale-125 transition-opacity duration-1000 ${showOriginal || !resultImage ? 'opacity-30' : 'opacity-0'}`}
+            />
+            {resultImage && (
+              <img 
+                src={resultImage} 
+                alt="bg-ai" 
+                className={`absolute inset-0 w-full h-full object-cover blur-[100px] scale-125 transition-opacity duration-1000 ${!showOriginal ? 'opacity-30' : 'opacity-0'}`}
+              />
+            )}
+          </>
         )}
       </div>
 
@@ -136,15 +145,21 @@ const App: React.FC = () => {
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4 pt-4 pb-48">
         {capturedImage ? (
           <div className={`relative w-full h-full flex items-center justify-center transition-all duration-1000 ${isGenerating ? 'blur-3xl opacity-10 scale-95' : 'blur-0 opacity-100 scale-100'}`}>
-            <img 
-              src={showOriginal ? capturedImage : (resultImage || capturedImage)} 
-              alt="Main Display" 
-              className="max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.9)] border border-white/5"
+             <img 
+              src={capturedImage} 
+              alt="Original" 
+              className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.8)] border border-white/5 transition-opacity duration-500 ${showOriginal || !resultImage ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             />
+            {resultImage && (
+              <img 
+                src={resultImage} 
+                alt="AI Result" 
+                className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.8)] border border-white/5 transition-opacity duration-500 ${!showOriginal ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              />
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center animate-in fade-in duration-1000 text-center">
-            {/* Centering fix: Use negative margin to compensate for tracking on the right */}
             <h1 className="font-black tracking-[0.2em] mr-[-0.2em] uppercase text-white/5 text-8xl md:text-9xl leading-none">
               IMAGE
             </h1>
@@ -155,27 +170,27 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* Generation Overlay - Perfectly Centered */}
+      {/* Generating Overlay */}
       {isGenerating && (
         <div className="absolute inset-0 flex items-center justify-center z-[60] pointer-events-none">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[8px]" />
-          <div className="relative flex flex-col items-center justify-center gap-4 w-full px-12">
-            <h1 className="text-6xl md:text-8xl font-black tracking-[0.5em] mr-[-0.5em] uppercase animate-breath-blue drop-shadow-[0_0_20px_rgba(59,130,246,0.6)] text-center leading-none">
+          <div className="relative flex flex-col items-center justify-center gap-4 w-full px-12 text-center">
+            <h1 className="text-6xl md:text-8xl font-black tracking-[0.5em] mr-[-0.5em] uppercase animate-breath-blue drop-shadow-[0_0_20px_rgba(59,130,246,0.6)] leading-none">
               IMAGE
             </h1>
-            <p className="text-white/40 text-[10px] md:text-xs font-bold uppercase tracking-[0.1em] text-center animate-pulse whitespace-nowrap">
+            <p className="text-white/40 text-[10px] md:text-xs font-bold uppercase tracking-[0.1em] animate-pulse">
               请耐心等待不要离开界面
             </p>
           </div>
         </div>
       )}
 
-      {/* Main Tab Bar Area */}
+      {/* Main Tab Bar */}
       <div className="absolute bottom-6 left-6 right-6 z-50 pointer-events-none">
         <div className="pointer-events-auto flex items-center justify-between gap-1.5 h-20 px-4 bg-black/80 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-10 duration-700">
           
           {!resultImage ? (
-            /* INITIAL STATE: [Settings] [Prompt] [Camera] [Upload] [Generate] */
+            /* INITIAL/EDITING STATE */
             <>
               <button onClick={() => setIsSettingsOpen(true)} className={commonBtnClass} title="Settings">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-white/50">
@@ -203,14 +218,14 @@ const App: React.FC = () => {
                 </svg>
               </button>
 
-              <button onClick={runAI} disabled={!capturedImage || isGenerating} className={primaryBtnClass} title="Generate">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 text-black">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+              <button onClick={runAI} disabled={!capturedImage || isGenerating} className={commonBtnClass} title="Generate">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 text-white/50">
+                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                 </svg>
               </button>
             </>
           ) : (
-            /* RESULT STATE: [Exit] [Flip] [Download] [Regenerate] */
+            /* RESULT/VIEWING STATE */
             <>
               <button onClick={handleExit} disabled={isGenerating} className={dangerBtnClass} title="Exit">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-red-400">
@@ -218,18 +233,15 @@ const App: React.FC = () => {
                 </svg>
               </button>
 
-              <button 
-                onClick={toggleComparison} 
-                className={showOriginal ? primaryBtnClass : commonBtnClass}
-                title="Toggle Original"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className={`w-5 h-5 transition-transform duration-500 ${showOriginal ? 'rotate-180 text-black' : 'rotate-0 text-white/50'}`}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              <button onClick={toggleComparison} className={commonBtnClass} title="Flip Comparison">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className={`w-5 h-5 transition-transform duration-300 ${showOriginal ? 'text-white' : 'text-white/50'}`}>
+                  {/* Horizontal Flip icon */}
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
                 </svg>
               </button>
 
-              <button onClick={handleDownload} className={primaryBtnClass} title="Download">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-black">
+              <button onClick={handleDownload} className={commonBtnClass} title="Download">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-white/50">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                 </svg>
               </button>
