@@ -40,19 +40,15 @@ const App: React.FC = () => {
     setShowOriginal(false);
     try {
       const result = await generateAIImage(capturedImage, prompt, apiSettings);
-      // Mark result as loading so we don't hide the overlay until the <img> tag actually renders it
       setIsResultLoading(true);
       setResultImage(result);
     } catch (err: any) {
       setError(err.message || 'Generation service unavailable');
       setIsGenerating(false);
     }
-    // Note: We don't set isGenerating(false) here. 
-    // It will be handled by the image's onLoad event.
   }, [capturedImage, prompt, apiSettings]);
 
   const handleImageLoad = () => {
-    // Both API call and browser rendering are done
     setIsGenerating(false);
     setIsResultLoading(false);
   };
@@ -136,20 +132,35 @@ const App: React.FC = () => {
         {capturedImage ? (
           <div className={`relative w-full h-full flex items-center justify-center transition-all duration-700 ${(isGenerating || isResultLoading) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
              
-             {/* Enhanced Aura Effect: Vibrant glow around the periphery */}
+             {/* Radiating Edge Glow / Aura */}
              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="relative w-[85%] h-[85%] flex items-center justify-center">
+                <div className="relative w-[80%] h-[80%] flex items-center justify-center">
+                   {/* Layer 1: Core Glow */}
                    <img 
                     src={capturedImage} 
-                    alt="aura-orig" 
-                    className={`absolute w-full h-full object-contain blur-[100px] transition-opacity duration-1000 ${showOriginal || !resultImage ? 'opacity-70 scale-110' : 'opacity-0'}`}
+                    alt="aura-1" 
+                    className={`absolute w-full h-full object-contain blur-[40px] transition-opacity duration-1000 ${showOriginal || !resultImage ? 'opacity-80 scale-105' : 'opacity-0'}`}
                   />
+                  {/* Layer 2: Radiating Bloom */}
+                  <img 
+                    src={capturedImage} 
+                    alt="aura-2" 
+                    className={`absolute w-full h-full object-contain blur-[120px] transition-opacity duration-1000 ${showOriginal || !resultImage ? 'opacity-40 scale-125' : 'opacity-0'}`}
+                  />
+                  
                   {resultImage && (
-                    <img 
-                      src={resultImage} 
-                      alt="aura-ai" 
-                      className={`absolute w-full h-full object-contain blur-[100px] transition-opacity duration-1000 ${!showOriginal ? 'opacity-70 scale-110' : 'opacity-0'}`}
-                    />
+                    <>
+                      <img 
+                        src={resultImage} 
+                        alt="aura-ai-1" 
+                        className={`absolute w-full h-full object-contain blur-[40px] transition-opacity duration-1000 ${!showOriginal ? 'opacity-80 scale-105' : 'opacity-0'}`}
+                      />
+                      <img 
+                        src={resultImage} 
+                        alt="aura-ai-2" 
+                        className={`absolute w-full h-full object-contain blur-[120px] transition-opacity duration-1000 ${!showOriginal ? 'opacity-40 scale-125' : 'opacity-0'}`}
+                      />
+                    </>
                   )}
                 </div>
              </div>
@@ -184,7 +195,6 @@ const App: React.FC = () => {
       {/* Generating Overlay with Starry Sky Particles */}
       {(isGenerating || isResultLoading) && (
         <div className="absolute inset-0 flex items-center justify-center z-[60] bg-black animate-in fade-in duration-300">
-          {/* Starry Sky Particle Effect */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {[...Array(60)].map((_, i) => (
               <div 
@@ -219,7 +229,6 @@ const App: React.FC = () => {
         <div className="pointer-events-auto flex items-center justify-between gap-1.5 h-20 px-4 bg-black/80 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-10 duration-700">
           
           {!resultImage ? (
-            /* INITIAL/EDITING STATE */
             <>
               <button onClick={() => setIsSettingsOpen(true)} className={commonBtnClass} title="Settings">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 text-white/50">
@@ -243,7 +252,8 @@ const App: React.FC = () => {
 
               <button onClick={() => fileInputRef.current?.click()} disabled={isGenerating} className={commonBtnClass} title="Upload">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6 text-white/50">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6.75a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6.75v12.75a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                  {/* Redrawn Clean Photo Icon (Absolute Path) */}
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75V6.75a2.25 2.25 0 0 1 2.25-2.25h15a2.25 2.25 0 0 1 2.25 2.25v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25z M11.25 9a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0z M21 14.25l-4.5-4.5L12 14.25l-3-3-4.5 4.5v3h16.5v-3z" />
                 </svg>
               </button>
 
@@ -254,7 +264,6 @@ const App: React.FC = () => {
               </button>
             </>
           ) : (
-            /* RESULT/VIEWING STATE */
             <>
               <button onClick={handleExit} disabled={isGenerating || isResultLoading} className={dangerBtnClass} title="Exit">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-red-400">
@@ -264,7 +273,6 @@ const App: React.FC = () => {
 
               <button onClick={toggleComparison} className={commonBtnClass} title="Flip Comparison">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className={`w-5 h-5 transition-transform duration-300 ${showOriginal ? 'text-white' : 'text-white/50'}`}>
-                  {/* Horizontal Flip icon */}
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
                 </svg>
               </button>
