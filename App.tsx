@@ -19,7 +19,7 @@ declare global {
 const App: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState('An artistic cyberpunk oil painting');
+  const [prompt, setPrompt] = useState('');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
