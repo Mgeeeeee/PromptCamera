@@ -254,8 +254,13 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Main Tab Bar - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center px-6 pb-6">
+      {/* Main Tab Bar - Fixed at bottom with padding for safe areas */}
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center px-6"
+        style={{ 
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' 
+        }}
+      >
         <div className="pointer-events-auto flex items-center justify-between gap-1.5 h-20 px-4 w-full max-w-md bg-black/80 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_80px_rgba(0,0,0,0.9)] animate-in slide-in-from-bottom-10 duration-700">
           
           {!resultImage ? (
