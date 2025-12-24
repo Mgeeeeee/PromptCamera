@@ -28,9 +28,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ settings, onSave
           </button>
         </div>
 
-        <div className="space-y-6 overflow-y-auto max-h-[60vh] pr-2 scrollbar-hide">
+        <div className="space-y-8">
           {/* Custom Provider Toggle */}
-          <div className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 transition-all">
+          <div className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5">
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-widest text-white/50">External Link</span>
               <span className="text-[8px] uppercase tracking-tighter text-white/20">Custom Provider</span>
@@ -49,7 +49,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ settings, onSave
               <label className="block text-[9px] font-black uppercase tracking-widest text-white/20 mb-3 ml-2">Access Key</label>
               <input 
                 type="password" 
-                value={localSettings.apiKey || ''}
+                value={localSettings.apiKey}
                 onChange={(e) => setLocalSettings(prev => ({ ...prev, apiKey: e.target.value }))}
                 placeholder="sk-..."
                 className="w-full bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-white focus:border-blue-500/50 outline-none transition-all text-sm font-mono tracking-wider"
