@@ -3,12 +3,10 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CameraModule } from './components/CameraModule';
 import { PromptDialog } from './components/PromptDialog';
 import { SettingsDialog } from './components/SettingsDialog';
-import { ImageEditor } from './components/ImageEditor';
 import { generateAIImage } from './services/geminiService';
 import { ModelType, ApiSettings } from './types';
 
 const App: React.FC = () => {
-  const [preEditImage, setPreEditImage] = useState<string | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -49,15 +47,10 @@ const App: React.FC = () => {
   }, [apiSettings]);
 
   const handleCapture = (base64: string) => {
-    setPreEditImage(base64);
     setIsCameraOpen(false);
-  };
-
-  const handleEditComplete = (editedBase64: string) => {
-    setPreEditImage(null);
-    setCapturedImage(editedBase64);
+    setCapturedImage(base64);
     setResultImage(null);
-    runAI(editedBase64, prompt);
+    runAI(base64, prompt);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,16 +117,18 @@ const App: React.FC = () => {
       <div className="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
         {capturedImage ? (
           <>
+            {/* Blurred background for atmosphere - No square borders */}
             <img 
               src={showOriginal ? capturedImage : (resultImage || capturedImage)} 
               alt="bg" 
-              className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-30 scale-125 transition-opacity duration-1000"
+              className="absolute inset-0 w-full h-full object-cover blur-[120px] opacity-25 scale-125 transition-opacity duration-1000"
             />
-            <div className={`relative z-10 w-full h-full max-w-[95%] max-h-[85%] flex items-center justify-center p-4 transition-all duration-1000 ${isGenerating ? 'blur-3xl opacity-10 scale-90' : 'blur-0 opacity-100 scale-100'}`}>
+            {/* Main Stage - Adaptive containing box */}
+            <div className={`relative z-10 w-full h-full max-w-[95%] max-h-[82%] flex items-center justify-center p-4 transition-all duration-1000 ${isGenerating ? 'blur-3xl opacity-10 scale-95' : 'blur-0 opacity-100 scale-100'}`}>
               <img 
                 src={showOriginal ? capturedImage : (resultImage || capturedImage)} 
                 alt="Display" 
-                className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl border border-white/5"
+                className="max-w-full max-h-full object-contain rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.8)] border border-white/5"
               />
             </div>
           </>
@@ -147,16 +142,17 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* Generation Overlay - Fixed for purely text-based ethereal look */}
+      {/* Generation Overlay - Pure ethereal text, no square background */}
       {isGenerating && (
-        <div className="absolute inset-0 flex items-center justify-center z-[60] bg-black/40 backdrop-blur-sm pointer-events-none">
-          <h1 className="text-6xl font-black tracking-[0.4em] uppercase animate-breath-blue drop-shadow-[0_0_20px_rgba(59,130,246,0.5)] text-center px-6">
+        <div className="absolute inset-0 flex items-center justify-center z-[60] pointer-events-none">
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
+          <h1 className="relative text-6xl font-black tracking-[0.4em] uppercase animate-breath-blue drop-shadow-[0_0_15px_rgba(59,130,246,0.6)] text-center px-6">
             IMAGE
           </h1>
         </div>
       )}
 
-      {/* Control Elements */}
+      {/* Control Elements - Top Bar */}
       <div className="absolute top-12 left-6 z-50">
         <button 
           onClick={() => setIsSettingsOpen(true)}
@@ -195,7 +191,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Control Bar */}
+      {/* Main Control Bar */}
       <div className="absolute bottom-10 left-6 right-6 z-50 flex items-center justify-between gap-3 h-20 px-4 bg-black/60 border border-white/10 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl animate-in slide-in-from-bottom-10 duration-700">
         <button 
           onClick={() => setIsPromptOpen(true)}
@@ -240,13 +236,6 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {preEditImage && (
-        <ImageEditor 
-          image={preEditImage} 
-          onSave={handleEditComplete} 
-          onCancel={() => setPreEditImage(null)} 
-        />
-      )}
       {isCameraOpen && <CameraModule onCapture={handleCapture} onClose={() => setIsCameraOpen(false)} />}
       {isPromptOpen && <PromptDialog initialPrompt={prompt} onSave={(p) => { setPrompt(p); setIsPromptOpen(false); }} onClose={() => setIsPromptOpen(false)} />}
       {isSettingsOpen && <SettingsDialog settings={apiSettings} onSave={(s) => { setApiSettings(s); setIsSettingsOpen(false); }} onClose={() => setIsSettingsOpen(false)} />}
