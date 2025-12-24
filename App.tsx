@@ -74,12 +74,11 @@ const App: React.FC = () => {
     }
   };
 
-  // Long press logic for Upload/Camera button
   const handleUploadPointerDown = () => {
     longPressTimer.current = window.setTimeout(() => {
       setIsCameraOpen(true);
       longPressTimer.current = null;
-    }, 500); // 500ms for long press
+    }, 500);
   };
 
   const handleUploadPointerUp = () => {
@@ -136,7 +135,8 @@ const App: React.FC = () => {
   const dangerBtnClass = "w-12 h-12 rounded-[1.2rem] bg-red-500/10 border border-red-500/20 flex items-center justify-center active:scale-90 transition-all shrink-0";
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden select-none text-white flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    /* Root container spans absolute full height. No top padding here to ensure solid black behind status bar. */
+    <div className="fixed inset-0 bg-black overflow-hidden select-none text-white flex flex-col">
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -145,8 +145,8 @@ const App: React.FC = () => {
         className="hidden" 
       />
 
-      {/* Main Adaptive Stage - Moved lower with pt-20 and justify-center refinement */}
-      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4 pt-20 pb-48">
+      {/* Main Stage: Using flex-1 to occupy space. Bottom padding respects tab bar. */}
+      <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4 pt-16 pb-48">
         {capturedImage ? (
           <div className={`relative w-full h-full flex items-center justify-center transition-all duration-700 ${(isGenerating || isResultLoading) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
              
@@ -240,8 +240,8 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Main Tab Bar */}
-      <div className="absolute bottom-6 left-6 right-6 z-50 pointer-events-none">
+      {/* Main Tab Bar - Floating above bottom safe area */}
+      <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+24px)] left-6 right-6 z-50 pointer-events-none">
         <div className="pointer-events-auto flex items-center justify-between gap-1.5 h-20 px-4 bg-black/80 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-10 duration-700">
           
           {!resultImage ? (
