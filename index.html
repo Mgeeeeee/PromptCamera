@@ -3,10 +3,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AI Vision Creator</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    :root {
+      --sat: env(safe-area-inset-top);
+      --sab: env(safe-area-inset-bottom);
+    }
     @keyframes breath-orange {
       0%, 100% { color: rgba(251, 146, 60, 1); text-shadow: 0 0 10px rgba(251, 146, 60, 0.4); }
       50% { color: rgba(251, 146, 60, 0.4); text-shadow: 0 0 2px rgba(251, 146, 60, 0.1); }
@@ -23,6 +27,11 @@
     .animate-breath-orange { animation: breath-orange 2s ease-in-out infinite; }
     .animate-breath-blue { animation: breath-blue 2s ease-in-out infinite; }
     .animate-pulse-green { animation: pulse-green 2s ease-out forwards; }
+    
+    body {
+      padding: var(--sat) 0 var(--sab) 0;
+      background-color: black;
+    }
   </style>
 <script type="importmap">
 {
