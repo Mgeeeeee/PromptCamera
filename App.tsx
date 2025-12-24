@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isResultLoading, setIsResultLoading] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -39,13 +40,22 @@ const App: React.FC = () => {
     setShowOriginal(false);
     try {
       const result = await generateAIImage(capturedImage, prompt, apiSettings);
+      // Mark result as loading so we don't hide the overlay until the <img> tag actually renders it
+      setIsResultLoading(true);
       setResultImage(result);
     } catch (err: any) {
       setError(err.message || 'Generation service unavailable');
-    } finally {
       setIsGenerating(false);
     }
+    // Note: We don't set isGenerating(false) here. 
+    // It will be handled by the image's onLoad event.
   }, [capturedImage, prompt, apiSettings]);
+
+  const handleImageLoad = () => {
+    // Both API call and browser rendering are done
+    setIsGenerating(false);
+    setIsResultLoading(false);
+  };
 
   const handleCapture = (base64: string) => {
     setIsCameraOpen(false);
@@ -124,21 +134,21 @@ const App: React.FC = () => {
       {/* Main Adaptive Stage */}
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-4 pt-4 pb-48">
         {capturedImage ? (
-          <div className={`relative w-full h-full flex items-center justify-center transition-all duration-1000 ${isGenerating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+          <div className={`relative w-full h-full flex items-center justify-center transition-all duration-700 ${(isGenerating || isResultLoading) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
              
-             {/* Refined Aura Effect: Subtle localized glow behind image periphery */}
+             {/* Enhanced Aura Effect: Vibrant glow around the periphery */}
              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative w-[85%] h-[85%] flex items-center justify-center">
                    <img 
                     src={capturedImage} 
                     alt="aura-orig" 
-                    className={`absolute w-[95%] h-[95%] object-contain blur-[50px] transition-opacity duration-1000 ${showOriginal || !resultImage ? 'opacity-60' : 'opacity-0'}`}
+                    className={`absolute w-full h-full object-contain blur-[100px] transition-opacity duration-1000 ${showOriginal || !resultImage ? 'opacity-70 scale-110' : 'opacity-0'}`}
                   />
                   {resultImage && (
                     <img 
                       src={resultImage} 
                       alt="aura-ai" 
-                      className={`absolute w-[95%] h-[95%] object-contain blur-[50px] transition-opacity duration-1000 ${!showOriginal ? 'opacity-60' : 'opacity-0'}`}
+                      className={`absolute w-full h-full object-contain blur-[100px] transition-opacity duration-1000 ${!showOriginal ? 'opacity-70 scale-110' : 'opacity-0'}`}
                     />
                   )}
                 </div>
@@ -148,13 +158,14 @@ const App: React.FC = () => {
              <img 
               src={capturedImage} 
               alt="Original" 
-              className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_120px_rgba(0,0,0,0.95)] border border-white/5 transition-opacity duration-500 ${showOriginal || !resultImage ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_150px_rgba(0,0,0,1)] border border-white/10 transition-opacity duration-500 ${showOriginal || !resultImage ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             />
             {resultImage && (
               <img 
                 src={resultImage} 
                 alt="AI Result" 
-                className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_120px_rgba(0,0,0,0.95)] border border-white/5 transition-opacity duration-500 ${!showOriginal ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                onLoad={handleImageLoad}
+                className={`absolute max-w-full max-h-full object-contain rounded-3xl shadow-[0_0_150px_rgba(0,0,0,1)] border border-white/10 transition-opacity duration-500 ${!showOriginal ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
               />
             )}
           </div>
@@ -171,28 +182,28 @@ const App: React.FC = () => {
       </div>
 
       {/* Generating Overlay with Starry Sky Particles */}
-      {isGenerating && (
-        <div className="absolute inset-0 flex items-center justify-center z-[60] bg-black">
+      {(isGenerating || isResultLoading) && (
+        <div className="absolute inset-0 flex items-center justify-center z-[60] bg-black animate-in fade-in duration-300">
           {/* Starry Sky Particle Effect */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {[...Array(50)].map((_, i) => (
+            {[...Array(60)].map((_, i) => (
               <div 
                 key={i} 
                 className="absolute bg-white rounded-full"
                 style={{
                   left: `${Math.random() * 100}%`,
                   top: `${Math.random() * 100}%`,
-                  width: `${1 + Math.random() * 2}px`,
-                  height: `${1 + Math.random() * 2}px`,
-                  boxShadow: '0 0 5px rgba(255,255,255,0.8)',
-                  animation: `star-twinkle ${3 + Math.random() * 4}s ease-in-out infinite, star-drift ${20 + Math.random() * 20}s linear infinite alternate`,
+                  width: `${1 + Math.random() * 1.5}px`,
+                  height: `${1 + Math.random() * 1.5}px`,
+                  boxShadow: '0 0 4px rgba(255,255,255,0.6)',
+                  animation: `star-twinkle ${2 + Math.random() * 3}s ease-in-out infinite, star-drift ${25 + Math.random() * 25}s linear infinite alternate`,
                   animationDelay: `${Math.random() * 5}s`
                 }}
               />
             ))}
           </div>
 
-          <div className="relative flex flex-col items-center justify-center gap-4 w-full px-12 text-center">
+          <div className="relative flex flex-col items-center justify-center gap-4 w-full px-12 text-center z-10">
             <h1 className="text-6xl md:text-8xl font-black tracking-[0.5em] mr-[-0.5em] uppercase animate-breath-blue drop-shadow-[0_0_20px_rgba(59,130,246,0.6)] leading-none">
               IMAGE
             </h1>
@@ -245,7 +256,7 @@ const App: React.FC = () => {
           ) : (
             /* RESULT/VIEWING STATE */
             <>
-              <button onClick={handleExit} disabled={isGenerating} className={dangerBtnClass} title="Exit">
+              <button onClick={handleExit} disabled={isGenerating || isResultLoading} className={dangerBtnClass} title="Exit">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-red-400">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -264,7 +275,7 @@ const App: React.FC = () => {
                 </svg>
               </button>
 
-              <button onClick={runAI} disabled={isGenerating} className={commonBtnClass} title="Regenerate">
+              <button onClick={runAI} disabled={isGenerating || isResultLoading} className={commonBtnClass} title="Regenerate">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-white/50">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                 </svg>
